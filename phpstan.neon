@@ -1,0 +1,14 @@
+includes:
+    - vendor/nunomaduro/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - app
+    excludePaths:
+        - app/Http/Controllers/Controller.php
+    parallel:
+        maximumNumberOfProcesses: 1
+        minimumNumberOfJobsPerProcess: 1
+        processTimeout: 60.0
+    reportUnmatchedIgnoredErrors: false

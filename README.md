@@ -121,15 +121,28 @@ docker compose logs -f horizon
 # Run artisan commands
 docker compose exec app php artisan <command>
 
-# Run Pest tests
-docker compose exec app ./vendor/bin/pest
-
-# Format code (PSR-12)
-docker compose exec app ./vendor/bin/pint
-
 # Stop containers
 docker compose down
 
 # Stop and remove volumes (resets database)
 docker compose down -v
+```
+
+## Code quality
+
+```bash
+# Check code style (Duster)
+docker compose exec app composer lint
+
+# Fix code style automatically
+docker compose exec app composer fix
+
+# Static analysis (Larastan level 5)
+docker compose exec app composer analyse
+
+# Run tests (Pest)
+docker compose exec app composer test
+
+# Run all checks at once (lint + analyse + test)
+docker compose exec app composer check
 ```

@@ -1,5 +1,7 @@
 # Orders 2026
 
+![CI](https://github.com/<your-username>/orders-2026/actions/workflows/ci.yml/badge.svg)
+
 Laravel application with Filament admin panel, Livewire, Horizon queue dashboard, and PostgreSQL.
 
 ## Stack

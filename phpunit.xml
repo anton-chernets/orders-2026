@@ -11,6 +11,10 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="Modules">
+            <directory suffix="Test.php">Modules/Catalog/tests/Feature</directory>
+            <directory suffix="Test.php">Modules/Order/tests/Feature</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

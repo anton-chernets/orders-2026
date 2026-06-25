@@ -1,6 +1,6 @@
 # Orders 2026
 
-Laravel application with Filament admin panel, Livewire, and PostgreSQL.
+Laravel application with Filament admin panel, Livewire, Horizon queue dashboard, and PostgreSQL.
 
 ## Stack
 
@@ -10,6 +10,7 @@ Laravel application with Filament admin panel, Livewire, and PostgreSQL.
 - Nginx
 - Livewire 3
 - Filament 3
+- Laravel Horizon
 - nwidart/laravel-modules
 - Pest
 
@@ -98,11 +99,12 @@ docker compose exec app php artisan migrate
 
 ## Access
 
-| Service   | URL / Host          |
-|-----------|---------------------|
-| App       | http://localhost:8000 |
-| PostgreSQL | localhost:5432      |
-| Redis     | localhost:6379      |
+| Service    | URL / Host             |
+|------------|------------------------|
+| App        | http://localhost:8000  |
+| Horizon    | http://localhost:8000/horizon |
+| PostgreSQL | localhost:5432         |
+| Redis      | localhost:6379         |
 
 ## Useful commands
 
@@ -113,11 +115,17 @@ docker compose ps
 # View logs
 docker compose logs -f
 
+# View Horizon logs
+docker compose logs -f horizon
+
 # Run artisan commands
 docker compose exec app php artisan <command>
 
 # Run Pest tests
 docker compose exec app ./vendor/bin/pest
+
+# Format code (PSR-12)
+docker compose exec app ./vendor/bin/pint
 
 # Stop containers
 docker compose down

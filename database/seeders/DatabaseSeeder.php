@@ -2,24 +2,29 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\SeedVersion;
 use Illuminate\Database\Seeder;
+use Modules\Catalog\Database\Seeders\CatalogDatabaseSeeder;
+use Modules\Order\Database\Seeders\OrderDatabaseSeeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->applyVersioned('catalog_v1', CatalogDatabaseSeeder::class);
+        $this->applyVersioned('order_v1', OrderDatabaseSeeder::class);
+    }
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+    private function applyVersioned(string $version, string $seederClass): void
+    {
+        if (SeedVersion::hasRun($version)) {
+            $this->command?->line("  Skipping {$version} (already applied)");
+
+            return;
+        }
+
+        $this->call($seederClass);
+        SeedVersion::markAsRun($version, $seederClass);
+        $this->command?->info("  Applied {$version}");
     }
 }

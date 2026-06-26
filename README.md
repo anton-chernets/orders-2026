@@ -6,27 +6,31 @@ Modular e-commerce order management system built with Laravel 12, Filament, Live
 
 ## Stack
 
-- PHP 8.4, Laravel 12
-- PostgreSQL 16
-- Redis
-- Nginx
-- Livewire 3
-- Filament 3 (admin panel)
-- Laravel Horizon (queue dashboard)
-- nwidart/laravel-modules 13
-- Pest (testing)
-- Laravel Duster + Larastan (code quality)
+| Layer | Technology |
+|-------|-----------|
+| Language | PHP 8.4 |
+| Framework | Laravel 12 |
+| Database | PostgreSQL 16 |
+| Cache / Queue | Redis |
+| Web server | Nginx |
+| Frontend | Livewire 3 |
+| Admin panel | Filament 3 |
+| Queue dashboard | Laravel Horizon |
+| Modules | nwidart/laravel-modules 13 |
+| Testing | Pest 3 |
+| Code quality | Laravel Duster (Pint + PHP CS Fixer + TLint + PHPCS) + Larastan level 5 |
 
 ## Requirements
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - Git
+- Node.js 20+ (for frontend build, runs on host)
 
 ---
 
-## Setup Instructions
+## Setup
 
-### 1. Installation
+### 1. Clone
 
 **Mac / Linux**
 ```bash
@@ -34,14 +38,14 @@ git clone <repo-url> orders-2026
 cd orders-2026
 ```
 
-**Windows** — run in PowerShell or Git Bash. Before cloning, disable line-ending conversion:
+**Windows** — disable line-ending conversion before cloning:
 ```bash
 git config --global core.autocrlf false
 git clone <repo-url> orders-2026
 cd orders-2026
 ```
 
-### 2. Environment configuration
+### 2. Environment
 
 **Mac / Linux**
 ```bash
@@ -53,15 +57,13 @@ cp .env.example .env
 copy .env.example .env
 ```
 
-The `.env.example` is pre-configured for Docker. Key settings:
+`.env.example` is pre-configured for Docker. Key variables:
 
-| Variable | Value | Description |
-|----------|-------|-------------|
-| `DB_CONNECTION` | `pgsql` | PostgreSQL driver |
+| Variable | Value | Notes |
+|----------|-------|-------|
 | `DB_HOST` | `postgres` | Docker service name |
-| `DB_DATABASE` | `orders` | Database name |
 | `REDIS_HOST` | `redis` | Docker service name |
-| `QUEUE_CONNECTION` | `redis` | Horizon uses Redis |
+| `QUEUE_CONNECTION` | `redis` | Required for Horizon |
 
 ### 3. Build and start containers
 
@@ -69,134 +71,213 @@ The `.env.example` is pre-configured for Docker. Key settings:
 docker compose up -d --build
 ```
 
-This starts: `app` (PHP-FPM), `nginx`, `postgres`, `redis`, `horizon`.
+Starts: `app` (PHP-FPM 8.4), `nginx`, `postgres`, `redis`, `horizon`.
 
-### 4. Database setup
+### 4. Database
 
 ```bash
-# Generate application key
 docker compose exec app php artisan key:generate
-
-# Run migrations
 docker compose exec app php artisan migrate
+docker compose exec app php artisan db:seed
 ```
 
-### 5. Asset compilation
+The seeder is idempotent — re-running it skips already-applied versions. See [Seed versioning](#seed-versioning).
+
+### 5. Assets
+
+Frontend CSS/JS is built with Vite on the **host machine** (not inside the container):
 
 ```bash
-# Install Node dependencies
-docker compose exec app npm install
-
-# Build assets (one-time)
-docker compose exec app npm run build
-
-# Or watch for changes during development
-docker compose exec app npm run dev
+npm install
+npm run build
 ```
+
+For development with hot-reload:
+```bash
+npm run dev
+```
+
+### 6. Filament admin assets
+
+Filament publishes its CSS and JS to `public/` separately from Vite:
+
+```bash
+docker compose exec app php artisan filament:assets
+```
+
+Re-run this after every `composer update` that upgrades Filament.
 
 ---
 
-## Running the Application
-
-### Start
+## Running the application
 
 ```bash
 docker compose up -d
 ```
 
-### Access
+| URL | Description |
+|-----|-------------|
+| http://localhost:8000 | Landing page |
+| http://localhost:8000/products | Product catalog |
+| http://localhost:8000/orders/create | Place an order |
+| http://localhost:8000/admin | Filament admin panel |
+| http://localhost:8000/horizon | Horizon queue dashboard |
 
-| Service | URL |
-|---------|-----|
-| Application | http://localhost:8000 |
-| Filament Admin | http://localhost:8000/admin |
-| Horizon Dashboard | http://localhost:8000/horizon |
+### Pages
 
-### Admin interface
+**`/products` — Product catalog**
+- Cards with In stock / Out of stock badge and remaining quantity
+- Price per product
+- "Order" button only on in-stock items
 
-Create an admin user:
+**`/orders/create` — Order form (Livewire)**
+- Left column: product list with `+` / `−` quantity controls per row
+- Right column: cart with product names, per-line subtotals, and running total
+- Loading state on the "Place Order" button during submission
+
+**`/orders/{id}` — Order confirmation**
+- Items table with prices and quantities
+- Order status badge
+- Customer details
+
+### Create an admin user
+
 ```bash
 docker compose exec app php artisan make:filament-user
 ```
 
+> Run this directly — do **not** enter the container shell first (`bash`), otherwise the host PHP will be used instead of the container's.
+
 Then log in at http://localhost:8000/admin.
-
-### Testing main functionality
-
-1. Open http://localhost:8000 — product catalog
-2. Add products to cart and place an order
-3. Log into admin at http://localhost:8000/admin to manage orders
-4. Track queue jobs at http://localhost:8000/horizon
 
 ---
 
-## Running Tests
+## Seed versioning
 
-### Test-specific setup
+Seeds are versioned to support incremental data updates on staging and production without re-seeding from scratch.
 
-Tests use an in-memory SQLite database — no extra configuration needed.
-The test environment is defined in `phpunit.xml`.
+### How it works
 
-### Run all tests
+- The `seed_versions` table records every applied version.
+- `php artisan db:seed` checks each version before running it — already-applied versions are skipped.
+- On a fresh database all versions apply; on an existing database only new ones run.
 
-```bash
-docker compose exec app ./vendor/bin/pest
+```
+php artisan db:seed
+
+  Skipping catalog_v1 if already applied
+  Skipping order_v1 if already applied
 ```
 
-### Run by suite
+### Adding new seed data
+
+Create a new seeder class, then register it in `database/seeders/DatabaseSeeder.php`:
+
+```php
+public function run(): void
+{
+    $this->applyVersioned('catalog_v1', CatalogDatabaseSeeder::class);
+    $this->applyVersioned('catalog_v2', CatalogV2Seeder::class); // new
+    $this->applyVersioned('order_v1', OrderDatabaseSeeder::class);
+}
+```
+
+Versions are applied in declaration order. Existing versions are never re-run.
+
+---
+
+## Module structure
+
+```
+Modules/
+├── Catalog/          # Products and categories
+│   ├── app/
+│   │   ├── Filament/Resources/   # CategoryResource, ProductResource
+│   │   ├── Models/               # Category, Product
+│   │   ├── Providers/            # CatalogServiceProvider (binds repository)
+│   │   └── Repositories/        # EloquentProductRepository
+│   └── database/
+│       ├── factories/
+│       ├── migrations/
+│       └── seeders/
+│
+└── Order/            # Order lifecycle
+    ├── app/
+    │   ├── Actions/              # PlaceOrderAction
+    │   ├── Events/               # OrderPlaced
+    │   ├── Filament/Resources/   # OrderResource
+    │   ├── Livewire/             # PlaceOrderForm
+    │   └── Models/               # Order, OrderItem
+    └── database/
+        ├── factories/
+        ├── migrations/
+        └── seeders/
+
+app/
+├── Contracts/Catalog/            # ProductRepositoryInterface
+├── DataTransferObjects/Catalog/  # ProductData (DTO)
+└── Enums/                        # OrderStatus
+```
+
+**Cross-module rule:** modules communicate only via contracts (`app/Contracts/`) and events. Direct model imports between modules are forbidden.
+
+**Order status workflow:**
+```
+pending → confirmed → shipped → delivered
+```
+
+---
+
+## Tests
+
+Tests use an in-memory SQLite database (configured in `phpunit.xml`) — no extra setup required.
 
 ```bash
-# Core application tests only
-docker compose exec app ./vendor/bin/pest --testsuite=Feature
+# Run all tests
+docker compose exec app ./vendor/bin/pest
 
-# All module tests
+# By suite
+docker compose exec app ./vendor/bin/pest --testsuite=Feature
 docker compose exec app ./vendor/bin/pest --testsuite=Modules
 
-# Catalog module only
+# By module
 docker compose exec app ./vendor/bin/pest Modules/Catalog
-
-# Order module only
 docker compose exec app ./vendor/bin/pest Modules/Order
-```
 
-### Show pending (todo) tests
-
-```bash
+# Show pending (todo) tests
 docker compose exec app ./vendor/bin/pest --todo
-```
 
-### Run via composer
-
-```bash
+# Via composer
 docker compose exec app composer test
 ```
 
 ---
 
-## Code Quality
-
-### Check & fix
+## Code quality
 
 ```bash
-# Check code style (Duster: Pint + PHP CS Fixer + TLint + PHPCS)
+# Check style (Duster)
 docker compose exec app composer lint
 
-# Auto-fix style issues
+# Auto-fix style
 docker compose exec app composer fix
 
 # Static analysis (Larastan level 5)
 docker compose exec app composer analyse
 
-# Run all checks at once (lint + analyse + test)
+# Run everything: lint + analyse + test
 docker compose exec app composer check
 ```
 
 ### CI/CD
 
-GitHub Actions runs the full pipeline on every push and pull request to `main`:
-- Code style validation (Duster)
-- Static analysis (Larastan level 5)
-- Tests (Pest)
+GitHub Actions runs on every push and pull request to `main`:
+
+1. Migrate database
+2. Apply versioned seeds
+3. Code style — Duster
+4. Static analysis — Larastan level 5
+5. Tests — Pest
 
 See `.github/workflows/ci.yml`.
 
@@ -205,24 +286,24 @@ See `.github/workflows/ci.yml`.
 ## Useful commands
 
 ```bash
-# View running containers
+# Container status
 docker compose ps
 
-# View all logs
+# Stream all logs
 docker compose logs -f
 
-# View Horizon logs
+# Stream Horizon logs only
 docker compose logs -f horizon
 
-# Run any artisan command
+# Artisan
 docker compose exec app php artisan <command>
 
-# Open a shell inside the container
+# Shell inside container
 docker compose exec app bash
 
-# Stop containers
+# Stop
 docker compose down
 
-# Stop and wipe the database
+# Stop and wipe volumes (database reset)
 docker compose down -v
 ```

@@ -5,8 +5,15 @@ parameters:
     level: 5
     paths:
         - app
+        - Modules
     excludePaths:
         - app/Http/Controllers/Controller.php
+        - Modules/*/config/*
+        - Modules/*/resources/*
+        - Modules/*/routes/*
+        - Modules/*/database/seeders/*
+        - Modules/*/tests/*
+        - tests/*
     parallel:
         maximumNumberOfProcesses: 1
         minimumNumberOfJobsPerProcess: 1

@@ -4,6 +4,8 @@ namespace Modules\Order\Providers;
 
 use Livewire\Livewire;
 use Modules\Order\Livewire\PlaceOrderForm;
+use Modules\Order\Models\Order;
+use Modules\Order\Observers\OrderObserver;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class OrderServiceProvider extends ModuleServiceProvider
@@ -21,5 +23,6 @@ class OrderServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         Livewire::component('order::place-order-form', PlaceOrderForm::class);
+        Order::observe(OrderObserver::class);
     }
 }

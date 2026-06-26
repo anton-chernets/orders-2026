@@ -3,6 +3,10 @@
 namespace Modules\Catalog\Providers;
 
 use App\Contracts\Catalog\ProductRepositoryInterface;
+use Modules\Catalog\Models\Category;
+use Modules\Catalog\Models\Product;
+use Modules\Catalog\Observers\CategoryObserver;
+use Modules\Catalog\Observers\ProductObserver;
 use Modules\Catalog\Repositories\EloquentProductRepository;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -24,5 +28,13 @@ class CatalogServiceProvider extends ModuleServiceProvider
             ProductRepositoryInterface::class,
             EloquentProductRepository::class,
         );
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        Product::observe(ProductObserver::class);
+        Category::observe(CategoryObserver::class);
     }
 }

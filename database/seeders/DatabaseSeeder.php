@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->applyVersioned('catalog_v1', CatalogDatabaseSeeder::class);
         $this->applyVersioned('order_v1', OrderDatabaseSeeder::class);
+        $this->applyVersioned('admin_v1', AdminUserSeeder::class);
     }
 
     private function applyVersioned(string $version, string $seederClass): void

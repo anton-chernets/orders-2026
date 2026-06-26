@@ -1,6 +1,6 @@
 # Orders 2026
 
-![CI](https://github.com/<your-username>/orders-2026/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/anton-chernets/orders-2026/actions/workflows/ci.yml/badge.svg)
 
 Modular e-commerce order management system built with Laravel 12, Filament, Livewire, and PostgreSQL.
 
@@ -19,6 +19,21 @@ Modular e-commerce order management system built with Laravel 12, Filament, Live
 | Modules | nwidart/laravel-modules 13 |
 | Testing | Pest 3 |
 | Code quality | Laravel Duster (Pint + PHP CS Fixer + TLint + PHPCS) + Larastan level 5 |
+
+## Live Demo
+
+Deployed on **Hetzner VPS** via **GitHub Actions CI/CD** — every push to `main` runs lint, static analysis, and tests, then auto-deploys on success.
+
+| | |
+|--|--|
+| App | http://138.199.232.187 |
+| Admin | http://138.199.232.187/admin |
+
+**Admin credentials:**
+- Email: `anton.fullstack@gmail.com`
+- Password: `Demo@2026!`
+
+---
 
 ## Requirements
 
@@ -305,8 +320,6 @@ docker compose exec app ./vendor/bin/pest --todo
 # Via composer
 docker compose exec app composer test
 ```
-
----
 
 ## Code quality
 

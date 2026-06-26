@@ -127,6 +127,20 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'products' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/products/products.log'),
+            'level' => 'debug',
+            'days' => 30,
+        ],
+
+        'orders' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/orders/orders.log'),
+            'level' => 'debug',
+            'days' => 30,
+        ],
+
     ],
 
 ];

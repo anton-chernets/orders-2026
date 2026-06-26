@@ -33,7 +33,7 @@ class PlaceOrderAction
             $dto = $dtoIndex[$item['product_id']] ?? null;
 
             if ($dto === null) {
-                Log::error('Product not found during order placement', [
+                Log::channel('products')->error('Product not found during order placement', [
                     'product_id' => $item['product_id'],
                     'customer_email' => $customerEmail,
                 ]);
@@ -41,7 +41,7 @@ class PlaceOrderAction
             }
 
             if (! $dto->inStock) {
-                Log::error('Attempted to order out-of-stock product', [
+                Log::channel('products')->error('Attempted to order out-of-stock product', [
                     'product_id' => $dto->id,
                     'product_name' => $dto->name,
                     'customer_email' => $customerEmail,

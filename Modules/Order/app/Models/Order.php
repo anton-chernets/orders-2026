@@ -41,7 +41,7 @@ class Order extends Model
     public function transitionTo(OrderStatus $newStatus): void
     {
         if (! $this->status->canTransitionTo($newStatus)) {
-            Log::error('Invalid order status transition attempted', [
+            Log::channel('orders')->error('Invalid order status transition attempted', [
                 'order_id' => $this->id,
                 'from' => $this->status->value,
                 'to' => $newStatus->value,

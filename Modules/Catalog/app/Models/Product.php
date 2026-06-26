@@ -5,6 +5,7 @@ namespace Modules\Catalog\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Catalog\Database\Factories\ProductFactory;
 
 /**
@@ -18,6 +19,7 @@ use Modules\Catalog\Database\Factories\ProductFactory;
 class Product extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = ['category_id', 'name', 'description', 'price', 'stock_quantity'];
 

@@ -53,7 +53,7 @@ test('admin can delete a product', function () {
     Livewire::test(ProductResource\Pages\ListProducts::class)
         ->callTableAction(DeleteAction::class, $product);
 
-    $this->assertDatabaseMissing('products', ['id' => $product->id]);
+    $this->assertSoftDeleted('products', ['id' => $product->id]);
 });
 
 test('product requires name and price', function () {

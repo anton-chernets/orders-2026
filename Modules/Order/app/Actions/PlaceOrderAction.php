@@ -3,7 +3,9 @@
 namespace Modules\Order\Actions;
 
 use App\Contracts\Catalog\ProductRepositoryInterface;
+use App\Enums\AuditAction;
 use App\Enums\OrderStatus;
+use App\Models\AuditLog;
 use Illuminate\Support\Facades\DB;
 use Modules\Order\Builders\OrderItemsBuilder;
 use Modules\Order\Events\OrderPlaced;
@@ -40,6 +42,14 @@ readonly class PlaceOrderAction
             ]);
 
             $order->items()->createMany($payload->items);
+
+            AuditLog::record('order', $order->id, AuditAction::Created, [
+                'customer_name' => $customerName,
+                'customer_email' => $customerEmail,
+                'total_amount' => $payload->total,
+                'status' => OrderStatus::Pending->value,
+                'items' => $payload->items,
+            ]);
 
             OrderPlaced::dispatch($order->id, $payload->productQuantities());
 

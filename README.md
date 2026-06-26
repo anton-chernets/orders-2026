@@ -193,8 +193,9 @@ Modules/
 ├── Catalog/          # Products and categories
 │   ├── app/
 │   │   ├── Filament/Resources/   # CategoryResource, ProductResource
-│   │   ├── Models/               # Category, Product
-│   │   ├── Providers/            # CatalogServiceProvider (binds repository)
+│   │   ├── Models/               # Category, Product (SoftDeletes)
+│   │   ├── Observers/            # ProductObserver, CategoryObserver
+│   │   ├── Providers/            # CatalogServiceProvider (binds repository, registers observers)
 │   │   └── Repositories/        # EloquentProductRepository
 │   └── database/
 │       ├── factories/
@@ -204,10 +205,15 @@ Modules/
 └── Order/            # Order lifecycle
     ├── app/
     │   ├── Actions/              # PlaceOrderAction
+    │   ├── Builders/             # OrderItemsBuilder
+    │   ├── DataTransferObjects/  # OrderPayload
     │   ├── Events/               # OrderPlaced
     │   ├── Filament/Resources/   # OrderResource
     │   ├── Livewire/             # PlaceOrderForm
-    │   └── Models/               # Order, OrderItem
+    │   ├── Models/               # Order, OrderItem
+    │   ├── Observers/            # OrderObserver
+    │   ├── Providers/            # OrderServiceProvider (registers observers)
+    │   └── Validators/           # CartValidator
     └── database/
         ├── factories/
         ├── migrations/
@@ -216,7 +222,8 @@ Modules/
 app/
 ├── Contracts/Catalog/            # ProductRepositoryInterface
 ├── DataTransferObjects/Catalog/  # ProductData (DTO)
-└── Enums/                        # OrderStatus
+├── Enums/                        # OrderStatus, AuditAction
+└── Models/                       # AuditLog
 ```
 
 **Cross-module rule:** modules communicate only via contracts (`app/Contracts/`) and events. Direct model imports between modules are forbidden.
@@ -225,6 +232,54 @@ app/
 ```
 pending → confirmed → shipped → delivered
 ```
+
+---
+
+## Audit Trail
+
+All entity changes are recorded in the `audit_logs` table via Eloquent Observers.
+
+### Tracked entities
+
+| Entity | Created | Updated | Deleted | Source |
+|--------|---------|---------|---------|--------|
+| Product | ✓ | ✓ | ✓ (soft) | Observer |
+| Category | ✓ | ✓ | ✓ (soft) | Observer |
+| Order | ✓ | ✓ | — | `created` → `PlaceOrderAction`, `updated` → Observer |
+
+### Table structure
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `entity` | string | Model name: `product`, `category`, `order` |
+| `entity_id` | bigint | ID of the affected record |
+| `action` | string | `created`, `updated`, `deleted` |
+| `changes` | json | Changed attributes (`null` for `deleted`) |
+| `user_id` | bigint nullable | Admin who made the change (null for system/queue) |
+
+- **`created`** — stores initial attributes (excludes `id`, timestamps). For orders: includes full items list + customer info, recorded explicitly in `PlaceOrderAction` after the transaction commits
+- **`updated`** — stores only changed fields (excludes `updated_at`)
+- **`deleted`** — records the deletion; `changes` is `null`
+
+### Adding audit trail to a new module
+
+1. Create an observer in `Modules/{Name}/app/Observers/{Model}Observer.php`
+2. Register it in the module's `ServiceProvider::boot()`:
+
+```php
+Product::observe(ProductObserver::class);
+```
+
+### Domain-specific error logs
+
+Each module writes errors to its own daily log channel:
+
+| Channel | Path |
+|---------|------|
+| `products` | `storage/logs/products/products-YYYY-MM-DD.log` |
+| `orders` | `storage/logs/orders/orders-YYYY-MM-DD.log` |
+
+Usage: `Log::channel('products')->error('...', [...])`
 
 ---
 

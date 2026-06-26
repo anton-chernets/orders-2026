@@ -43,22 +43,6 @@ services:
     networks:
       - orders-network
 
-  horizon:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: orders-horizon
-    restart: unless-stopped
-    working_dir: /var/www
-    volumes:
-      - .:/var/www
-    command: php artisan horizon
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - orders-network
-
   redis:
     image: redis:alpine
     container_name: orders-redis

@@ -15,7 +15,6 @@ Modular e-commerce order management system built with Laravel 12, Filament, Live
 | Web server | Nginx |
 | Frontend | Livewire 3 |
 | Admin panel | Filament 3 |
-| Queue dashboard | Laravel Horizon |
 | Modules | nwidart/laravel-modules 13 |
 | Testing | Pest 3 |
 | Code quality | Laravel Duster (Pint + PHP CS Fixer + TLint + PHPCS) + Larastan level 5 |
@@ -78,7 +77,7 @@ copy .env.example .env
 |----------|-------|-------|
 | `DB_HOST` | `postgres` | Docker service name |
 | `REDIS_HOST` | `redis` | Docker service name |
-| `QUEUE_CONNECTION` | `redis` | Required for Horizon |
+| `QUEUE_CONNECTION` | `sync` | Queue driver |
 
 ### 3. Build and start containers
 
@@ -86,7 +85,7 @@ copy .env.example .env
 docker compose up -d --build
 ```
 
-Starts: `app` (PHP-FPM 8.4), `nginx`, `postgres`, `redis`, `horizon`.
+Starts: `app` (PHP-FPM 8.4), `nginx`, `postgres`, `redis`.
 
 ### 4. Database
 
@@ -136,7 +135,6 @@ docker compose up -d
 | http://localhost:8000/products | Product catalog |
 | http://localhost:8000/orders/create | Place an order |
 | http://localhost:8000/admin | Filament admin panel |
-| http://localhost:8000/horizon | Horizon queue dashboard |
 
 ### Pages
 
@@ -359,9 +357,6 @@ docker compose ps
 
 # Stream all logs
 docker compose logs -f
-
-# Stream Horizon logs only
-docker compose logs -f horizon
 
 # Artisan
 docker compose exec app php artisan <command>

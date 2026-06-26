@@ -32,7 +32,7 @@ jobs:
               sh -c "npm ci && npm run build"
 
             docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-              up -d --build --no-deps app horizon
+              up -d --build --no-deps app
 
             docker compose exec -T app php artisan migrate --force
 
